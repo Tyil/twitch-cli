@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+require "colorize"
+require "json"
+require "net/http"
+
+channels       = []
+online         = []
+offline        = []
+api_base_url   = "https://api.twitch.tv/kraken/streams/"
+channel_length = 0
+
+File.open(ENV["HOME"] + "/favorites/twitch.list", "r") do |f|
+  f.each_line do |line|
+    channels.push(line.strip)
+  end
+end
+
+print "Checking for Twitch channel statuses\n"
+
+# loop through all channels
+channels.each do |channel|
+  if ENV["DEBUG"]
+    print "Checking channel #{channel}\n"
+  end
+
+  # send out cURL request
+  response = Net::HTTP.get(URI.parse(api_base_url + channel))
+  json     = JSON.parse(response)
+
+  if ENV["DEBUG"]
+    print "Got response: #{response}\n"
+  end
+
+  # check wether this channel is the largest name so we can make a nice list later on
+  if channel.size > channel_length
+    channel_length = channel.size
+  end
+
+  if !json.nil? && !json["stream"].nil?
+    online.push([channel, json["stream"]["game"]])
+
+    next
+  end
+
+  offline.push(channel)
+end
+
+if ENV["DEBUG"]
+  offline.each do |channel|
+    printf("%- "+ channel_length.to_s + "s  %s\n", channel, "Offline".red)
+  end
+end
+
+if online.size == 0
+  printf("All %d channels are %s\n", offline.size, "offline".red)
+  exit(0)
+end
+
+online.each do |channel|
+  printf("%- "+ channel_length.to_s + "s  %s\n", channel[0], channel[1].green)
+end
+
