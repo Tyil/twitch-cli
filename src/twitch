@@ -95,9 +95,9 @@ def check_channel(channel)
 
   return {
     "valid" => true,
-    "name" => json["stream"]["channel"]["name"],
-    "game" => json["stream"]["game"],
-    "url"  => json["stream"]["channel"]["url"]
+    "name"  => json["stream"]["channel"]["name"],
+    "game"  => json["stream"]["game"],
+    "url"   => json["stream"]["channel"]["url"]
   }
 end
 
