@@ -65,7 +65,9 @@ def main()
     end
   end.parse!
 
-  print "Checking for Twitch channel statuses\n"
+  if !$opts[:single]
+    print "Checking for Twitch channel statuses\n"
+  end
 
   # get a list of all channels
   channel_file = get_config_location()
