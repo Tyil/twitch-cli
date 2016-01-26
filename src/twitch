@@ -65,11 +65,70 @@ def parse_opts()
   end.parse!
 end
 
-def main()
-  online         = []
-  api_base_url   = "https://api.twitch.tv/kraken/streams/"
-  channel_length = 0
+def parse_channels(base_url, channels)
+  online = []
+  sizes  = {
+    "name" => 0,
+    "game" => 0
+  }
 
+  # loop through all channels
+  channels.each do |channel|
+    if $opts[:verbose]
+      print "Checking channel #{channel}\n"
+    end
+
+    # send out cURL request
+    response = Net::HTTP.get(URI.parse(base_url + channel))
+    json     = JSON.parse(response)
+
+    if $opts[:verbose]
+      print "Got response: #{response}\n"
+    end
+
+    if !json.nil? && !json["stream"].nil?
+      # check wether this channel is the largest name so we can make a nice list later on
+      if sizes["name"] < json["stream"]["channel"]["name"].length()
+        sizes["name"] = json["stream"]["channel"]["name"].length()
+      end
+
+      # check the length of the game name as well
+      if sizes["game"] < json["stream"]["game"].length()
+        sizes["game"] = json["stream"]["game"].length()
+      end
+
+      # push the channel onto the array
+      online.push({
+        "name" => json["stream"]["channel"]["name"],
+        "game" => json["stream"]["game"],
+        "url"  => json["stream"]["channel"]["url"]
+      })
+    end
+  end
+
+  # add a small increment to sizes to add spaces in the eventual list
+  sizes["name"] += 2
+  sizes["game"] += 2
+
+  return [online, sizes]
+end
+
+def print_channel(channel, sizes)
+  printf("%- " + sizes["name"].to_s() + "s", channel["name"])
+
+  if $opts[:game]
+    # add 14 because of the coloring
+    printf("%- " + (sizes["game"] + 14).to_s() + "s", channel["game"].green())
+  end
+
+  if $opts[:url]
+    print(channel["url"].blue())
+  end
+
+  print("\n")
+end
+
+def main()
   # parse opts
   parse_opts()
 
@@ -80,73 +139,30 @@ def main()
   # get a list of all channels
   channel_file = get_config_location()
   channels     = load_channels(channel_file)
+  parsed       = parse_channels("https://api.twitch.tv/kraken/streams/", channels)
 
-  # loop through all channels
-  channels.each do |channel|
-    if $opts[:verbose]
-      print "Checking channel #{channel}\n"
-    end
-
-    # send out cURL request
-    response = Net::HTTP.get(URI.parse(api_base_url + channel))
-    json     = JSON.parse(response)
-
-    if $opts[:verbose]
-      print "Got response: #{response}\n"
-    end
-
-    if !json.nil? && !json["stream"].nil?
-      # check wether this channel is the largest name so we can make a nice list later on
-      if channel.size > channel_length
-        channel_length = channel.size
-      end
-
-      # push the channel onto the array
-      online.push({
-        "name" => json["stream"]["channel"]["name"],
-        "game" => json["stream"]["game"],
-        "url"  => json["stream"]["channel"]["url"]
-      })
-
-      next
-    end
-  end
+  online       = parsed[0]
+  sizes        = parsed[1]
 
   # return a single random channel
   if $opts[:single]
     # generate a random number within the bounds of the online array
     i = Random.new().rand(online.size())
 
+    # if url is requested in combination with single, print just the url and exit cleanly
     if $opts[:url]
       print online[i]["url"]
-    else
-      print online[i]["name"]
+
+      exit(0)
     end
 
-    # append the gamename if requested
-    if $opts[:game]
-      print "  " + online[i]["game"].green
-    end
-
-    print "\n"
-
-    # exit cleanly
+    print_channel(online[i], sizes)
     exit(0)
   end
 
   # return a list of online channels
   online.each do |channel|
-    print channel["name"]
-
-    if $opts[:game]
-      print "  " + channel["game"].green
-    end
-
-    if $opts[:url]
-      print "  " + channel["url"].blue
-    end
-
-    print "\n"
+    print_channel(channel, sizes)
   end
 end
 
