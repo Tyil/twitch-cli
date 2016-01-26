@@ -3,61 +3,142 @@
 require "colorize"
 require "json"
 require "net/http"
+require "optparse"
 
-channels       = []
-online         = []
-offline        = []
-api_base_url   = "https://api.twitch.tv/kraken/streams/"
-channel_length = 0
+$opts = {}
 
-File.open(ENV["HOME"] + "/favorites/twitch.list", "r") do |f|
-  f.each_line do |line|
-    channels.push(line.strip)
+def get_config_location()
+  locations = [
+    ENV["XDG_CONFIG_HOME"] + "/twitch/channels",
+    ENV["HOME"] + ".config/twitch/channels"
+  ]
+
+  locations.each do |location|
+    if File.exists?(location)
+      if $opts[:verbose]
+        printf("Reading %s\n", location)
+      end
+
+      return location
+    end
+  end
+
+  printf("%s\n", "Could not load channel file".red)
+  exit(1)
+end
+
+def load_channels(file)
+  channels = []
+
+  File.open(file, "r") do |f|
+    f.each_line do |line|
+      channels.push(line.strip)
+    end
+  end
+
+  return channels
+end
+
+def main()
+  online         = []
+  api_base_url   = "https://api.twitch.tv/kraken/streams/"
+  channel_length = 0
+
+  # parse opts
+  OptionParser.new do |opts|
+    opts.banner = "Usage: twitch [options]"
+
+    opts.on("-g", "--game", "Show the streamed game") do |o|
+      $opts[:game] = o
+    end
+
+    opts.on("-s", "--single", "Show a single, random channel") do |o|
+      $opts[:single] = o
+    end
+
+    opts.on("-u", "--url", "Return the URL when combined with -s, or add the url when -s is omitted") do |o|
+      $opts[:url] = o
+    end
+
+    opts.on("-v", "--verbose", "Add extra verbose output") do |o|
+      $opts[:verbose] = o
+    end
+  end.parse!
+
+  print "Checking for Twitch channel statuses\n"
+
+  # get a list of all channels
+  channel_file = get_config_location()
+  channels     = load_channels(channel_file)
+
+  # loop through all channels
+  channels.each do |channel|
+    if $opts[:verbose]
+      print "Checking channel #{channel}\n"
+    end
+
+    # send out cURL request
+    response = Net::HTTP.get(URI.parse(api_base_url + channel))
+    json     = JSON.parse(response)
+
+    if $opts[:verbose]
+      print "Got response: #{response}\n"
+    end
+
+    if !json.nil? && !json["stream"].nil?
+      # check wether this channel is the largest name so we can make a nice list later on
+      if channel.size > channel_length
+        channel_length = channel.size
+      end
+
+      # push the channel onto the array
+      online.push({
+        "name" => json["stream"]["channel"]["name"],
+        "game" => json["stream"]["game"],
+        "url"  => json["stream"]["channel"]["url"]
+      })
+
+      next
+    end
+  end
+
+  # return a single random channel
+  if $opts[:single]
+    # generate a random number within the bounds of the online array
+    i = Random.new().rand(online.size())
+
+    if $opts[:url]
+      print online[i]["url"]
+    else
+      print online[i]["name"]
+    end
+
+    # append the gamename if requested
+    if $opts[:game]
+      print "  " + online[i]["game"].green
+    end
+
+    print "\n"
+
+    # exit cleanly
+    exit(0)
+  end
+
+  # return a list of online channels
+  online.each do |channel|
+    print channel["name"]
+
+    if $opts[:game]
+      print "  " + channel["game"].green
+    end
+
+    if $opts[:url]
+      print "  " + channel["url"].blue
+    end
+
+    print "\n"
   end
 end
 
-print "Checking for Twitch channel statuses\n"
-
-# loop through all channels
-channels.each do |channel|
-  if ENV["DEBUG"]
-    print "Checking channel #{channel}\n"
-  end
-
-  # send out cURL request
-  response = Net::HTTP.get(URI.parse(api_base_url + channel))
-  json     = JSON.parse(response)
-
-  if ENV["DEBUG"]
-    print "Got response: #{response}\n"
-  end
-
-  # check wether this channel is the largest name so we can make a nice list later on
-  if channel.size > channel_length
-    channel_length = channel.size
-  end
-
-  if !json.nil? && !json["stream"].nil?
-    online.push([channel, json["stream"]["game"]])
-
-    next
-  end
-
-  offline.push(channel)
-end
-
-if ENV["DEBUG"]
-  offline.each do |channel|
-    printf("%- "+ channel_length.to_s + "s  %s\n", channel, "Offline".red)
-  end
-end
-
-if online.size == 0
-  printf("All %d channels are %s\n", offline.size, "offline".red)
-  exit(0)
-end
-
-online.each do |channel|
-  printf("%- "+ channel_length.to_s + "s  %s\n", channel[0], channel[1].green)
-end
+main()
 
