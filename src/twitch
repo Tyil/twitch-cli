@@ -39,17 +39,16 @@ def load_channels(file)
   return channels
 end
 
-def main()
-  online         = []
-  api_base_url   = "https://api.twitch.tv/kraken/streams/"
-  channel_length = 0
-
-  # parse opts
+def parse_opts()
   OptionParser.new do |opts|
     opts.banner = "Usage: twitch [options]"
 
     opts.on("-g", "--game", "Show the streamed game") do |o|
       $opts[:game] = o
+    end
+
+    opts.on("-m", "--mpv", "Open the stream in mpv. Implies -s if no argument was given.") do |o|
+      $opts[:mpv] = o
     end
 
     opts.on("-s", "--single", "Show a single, random channel") do |o|
@@ -64,6 +63,15 @@ def main()
       $opts[:verbose] = o
     end
   end.parse!
+end
+
+def main()
+  online         = []
+  api_base_url   = "https://api.twitch.tv/kraken/streams/"
+  channel_length = 0
+
+  # parse opts
+  parse_opts()
 
   if !$opts[:single]
     print "Checking for Twitch channel statuses\n"
