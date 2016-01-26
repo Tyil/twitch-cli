@@ -157,10 +157,6 @@ def main()
   # parse opts
   parse_opts()
 
-  if !$opts[:single]
-    print "Checking for Twitch channel statuses\n"
-  end
-
   if $opts[:mpv] && ARGV[0]
     channel = check_channel(ARGV[0])
 
