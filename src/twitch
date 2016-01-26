@@ -174,8 +174,8 @@ def main()
   channels     = load_channels(channel_file)
   parsed       = parse_channels(channels)
 
-  online       = parsed[0]
-  sizes        = parsed[1]
+  online = parsed[0]
+  sizes  = parsed[1]
 
   # return a single random channel
   if $opts[:single]
