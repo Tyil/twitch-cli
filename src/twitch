@@ -5,7 +5,8 @@ require "json"
 require "net/http"
 require "optparse"
 
-$opts = {}
+$opts    = {}
+$api_url = "https://api.twitch.tv/kraken/streams/"
 
 def get_config_location()
   locations = [
@@ -65,7 +66,42 @@ def parse_opts()
   end.parse!
 end
 
-def parse_channels(base_url, channels)
+def check_channel(channel)
+  if $opts[:verbose]
+    print "Checking channel #{channel}\n"
+  end
+
+  # send out cURL request
+  response = Net::HTTP.get(URI.parse($api_url + channel))
+  json     = JSON.parse(response)
+
+  # check if we returned any json at all
+  if json.nil?
+    return {
+      "valid" => false
+    }
+  end
+
+  # check wether the returned json contains a running stream
+  if json["stream"].nil?
+    return {
+      "valid" => false
+    }
+  end
+
+  if $opts[:verbose]
+    print "Got response: #{response}\n"
+  end
+
+  return {
+    "valid" => true,
+    "name" => json["stream"]["channel"]["name"],
+    "game" => json["stream"]["game"],
+    "url"  => json["stream"]["channel"]["url"]
+  }
+end
+
+def parse_channels(channels)
   online = []
   sizes  = {
     "name" => 0,
@@ -74,36 +110,25 @@ def parse_channels(base_url, channels)
 
   # loop through all channels
   channels.each do |channel|
-    if $opts[:verbose]
-      print "Checking channel #{channel}\n"
+    info = check_channel(channel)
+
+    # check if we got a workable resultset
+    if !info["valid"]
+      next
     end
 
-    # send out cURL request
-    response = Net::HTTP.get(URI.parse(base_url + channel))
-    json     = JSON.parse(response)
-
-    if $opts[:verbose]
-      print "Got response: #{response}\n"
+    # check wether this channel is the largest name so we can make a nice list later on
+    if sizes["name"] < info["name"].length()
+      sizes["name"] = info["name"].length()
     end
 
-    if !json.nil? && !json["stream"].nil?
-      # check wether this channel is the largest name so we can make a nice list later on
-      if sizes["name"] < json["stream"]["channel"]["name"].length()
-        sizes["name"] = json["stream"]["channel"]["name"].length()
-      end
-
-      # check the length of the game name as well
-      if sizes["game"] < json["stream"]["game"].length()
-        sizes["game"] = json["stream"]["game"].length()
-      end
-
-      # push the channel onto the array
-      online.push({
-        "name" => json["stream"]["channel"]["name"],
-        "game" => json["stream"]["game"],
-        "url"  => json["stream"]["channel"]["url"]
-      })
+    # check the length of the game name as well
+    if sizes["game"] < info["game"].length()
+      sizes["game"] = info["game"].length()
     end
+
+    # push the channel onto the array
+    online.push(info)
   end
 
   # add a small increment to sizes to add spaces in the eventual list
@@ -136,10 +161,22 @@ def main()
     print "Checking for Twitch channel statuses\n"
   end
 
+  if $opts[:mpv] && ARGV[0]
+    channel = check_channel(ARGV[0])
+
+    if !channel["valid"]
+      print "This channel is either offline, or doesn't exist\n"
+
+      exit(2)
+    end
+
+    exec(sprintf("%s %s", "mpv", channel["url"]))
+  end
+
   # get a list of all channels
   channel_file = get_config_location()
   channels     = load_channels(channel_file)
-  parsed       = parse_channels("https://api.twitch.tv/kraken/streams/", channels)
+  parsed       = parse_channels(channels)
 
   online       = parsed[0]
   sizes        = parsed[1]
@@ -148,6 +185,11 @@ def main()
   if $opts[:single]
     # generate a random number within the bounds of the online array
     i = Random.new().rand(online.size())
+
+    # if mpv is set, simply run the stream in mpv
+    if $opts[:mpv]
+      exec(sprintf("%s %s", "mpv", online[i]["url"]))
+    end
 
     # if url is requested in combination with single, print just the url and exit cleanly
     if $opts[:url]
