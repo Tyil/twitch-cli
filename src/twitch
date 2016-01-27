@@ -201,22 +201,21 @@ def main()
 
   # return a single random channel
   if $opts[:single]
-    # generate a random number within the bounds of the online array
-    i = Random.new().rand(online.size())
+    channel = online.sample()
 
     # if mpv is set, simply run the stream in mpv
     if $opts[:mpv]
-      exec(sprintf("%s %s", "mpv", online[i]["url"]))
+      exec(sprintf("%s %s", "mpv", channel["url"]))
     end
 
     # if url is requested in combination with single, print just the url and exit cleanly
     if $opts[:url]
-      print(online[i]["url"])
+      print(channel["url"])
 
       exit(0)
     end
 
-    print_channel(online[i], sizes)
+    print_channel(channel, sizes)
     exit(0)
   end
 
