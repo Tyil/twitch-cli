@@ -28,7 +28,12 @@ def get_config_location()
     end
   end
 
-  printf("%s\n", "Could not load channel file".red)
+  print("Could not load channel file: No file found at any of these locations:".red + "\n")
+
+  locations.each do |location|
+    print("  " + location + "\n")
+  end
+
   exit(1)
 end
 
