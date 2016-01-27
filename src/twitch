@@ -9,10 +9,14 @@ $opts    = {}
 $api_url = "https://api.twitch.tv/kraken/streams/"
 
 def get_config_location()
-  locations = [
-    ENV["XDG_CONFIG_HOME"] + "/twitch/channels",
-    ENV["HOME"] + ".config/twitch/channels"
-  ]
+  locations = []
+
+  # add locations to the lookup, but check wether some environment variables are set
+  if !ENV["XDG_CONFIG_HOME"].nil?
+    locations << ENV["XDG_CONFIG_HOME"] + "/twitch/channels"
+  end
+
+  locations << ENV["HOME"] + ".config/twitch/channels"
 
   locations.each do |location|
     if File.exists?(location)
