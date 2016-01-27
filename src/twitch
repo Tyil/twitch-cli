@@ -20,7 +20,7 @@ def get_config_location()
 
   locations.each do |location|
     if $opts[:verbose]
-      print "Checking " + location + "\n"
+      print("Checking " + location + "\n")
     end
 
     if File.exists?(location)
@@ -81,7 +81,7 @@ end
 
 def check_channel(channel)
   if $opts[:verbose]
-    print "Checking channel #{channel}\n"
+    print("Checking channel #{channel}\n")
   end
 
   # send out cURL request
@@ -103,7 +103,7 @@ def check_channel(channel)
   end
 
   if $opts[:verbose]
-    print "Got response: #{response}\n"
+    print("Got response: #{response}\n")
   end
 
   return {
@@ -183,7 +183,7 @@ def main()
     channel = check_channel(ARGV[0])
 
     if !channel["valid"]
-      print "This channel is either offline, or doesn't exist\n"
+      print("This channel is either offline, or doesn't exist\n")
 
       exit(2)
     end
@@ -211,7 +211,7 @@ def main()
 
     # if url is requested in combination with single, print just the url and exit cleanly
     if $opts[:url]
-      print online[i]["url"]
+      print(online[i]["url"])
 
       exit(0)
     end
