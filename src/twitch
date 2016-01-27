@@ -16,7 +16,7 @@ def get_config_location()
     locations << ENV["XDG_CONFIG_HOME"] + "/twitch/channels"
   end
 
-  locations << ENV["HOME"] + ".config/twitch/channels"
+  locations << ENV["HOME"] + "/.config/twitch/channels"
 
   locations.each do |location|
     if $opts[:verbose]
