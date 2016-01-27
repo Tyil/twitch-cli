@@ -1,0 +1,5 @@
+gem 'colorize'
+gem 'json'
+gem 'net/http'
+gem 'optparse'
+
