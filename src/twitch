@@ -102,6 +102,7 @@ def check_channel(channel)
 end
 
 def parse_channels(channels)
+  threads = []
   online = []
   sizes  = {
     "name" => 0,
@@ -110,25 +111,33 @@ def parse_channels(channels)
 
   # loop through all channels
   channels.each do |channel|
-    info = check_channel(channel)
+    # do this in seperate threads to speed up the process
+    threads << Thread.new {
+      info = check_channel(channel)
 
-    # check if we got a workable resultset
-    if !info["valid"]
-      next
-    end
+      # check if we got a workable resultset
+      if !info["valid"]
+        next
+      end
 
-    # check wether this channel is the largest name so we can make a nice list later on
-    if sizes["name"] < info["name"].length()
-      sizes["name"] = info["name"].length()
-    end
+      # check wether this channel is the largest name so we can make a nice list later on
+      if sizes["name"] < info["name"].length()
+        sizes["name"] = info["name"].length()
+      end
 
-    # check the length of the game name as well
-    if sizes["game"] < info["game"].length()
-      sizes["game"] = info["game"].length()
-    end
+      # check the length of the game name as well
+      if sizes["game"] < info["game"].length()
+        sizes["game"] = info["game"].length()
+      end
 
-    # push the channel onto the array
-    online.push(info)
+      # push the channel onto the array
+      online.push(info)
+    }
+  end
+
+  # make sure all threads are done
+  threads.each do |thread|
+    thread.join()
   end
 
   # add a small increment to sizes to add spaces in the eventual list
