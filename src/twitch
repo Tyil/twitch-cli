@@ -125,11 +125,7 @@ end
 
 def parse_channels(channels)
   threads = []
-  online = []
-  sizes  = {
-    "name" => 0,
-    "game" => 0
-  }
+  online  = []
 
   # loop through all channels
   channels.each do |channel|
@@ -142,16 +138,6 @@ def parse_channels(channels)
         next
       end
 
-      # check wether this channel is the largest name so we can make a nice list later on
-      if sizes["name"] < info["name"].length()
-        sizes["name"] = info["name"].length()
-      end
-
-      # check the length of the game name as well
-      if sizes["game"] < info["game"].length()
-        sizes["game"] = info["game"].length()
-      end
-
       # push the channel onto the array
       online.push(info)
     }
@@ -162,15 +148,21 @@ def parse_channels(channels)
     thread.join()
   end
 
-  return [online, sizes]
+  return online
 end
 
 def print_channel(channel, sizes)
-  printf("%- " + sizes["name"].to_s() + "s", channel["name"])
+  size_game = sizes[:game]
+
+  printf("%- " + sizes[:name].to_s() + "s", channel["name"])
 
   if $opts[:game]
+    if $opts[:colors]
+      size_game += 14
+    end
+
     print($seperator)
-    printf("%- " + sizes["game"].to_s() + "s", color_text(channel["game"], :green))
+    printf("%- " + size_game.to_s() + "s", color_text(channel["game"], :green))
   end
 
   if $opts[:url]
@@ -196,6 +188,18 @@ def color_text(text, color)
   end
 end
 
+def calc_max_size(strings, key)
+  max_size = 0
+
+  strings.each do |string|
+    if max_size < string[key].length()
+      max_size = string[key].length()
+    end
+  end
+
+  return max_size
+end
+
 def main()
   # parse opts
   parse_opts()
@@ -215,10 +219,12 @@ def main()
   # get a list of all channels
   channel_file = get_config_location()
   channels     = load_channels(channel_file)
-  parsed       = parse_channels(channels)
+  online       = parse_channels(channels)
 
-  online = parsed[0]
-  sizes  = parsed[1]
+  sizes = {
+    :channel => calc_max_size(online, "name"),
+    :game    => calc_max_size(online, "game")
+  }
 
   # return a single random channel
   if $opts[:single]
