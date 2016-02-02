@@ -62,6 +62,10 @@ def parse_opts()
       $opts[:single] = o
     end
 
+    opts.on("-c", "--color", "Apply colors") do |o|
+      $opts[:colors] = o
+    end
+
     opts.on("-g", "--game", "Show the streamed game") do |o|
       $opts[:game] = o
     end
@@ -166,17 +170,31 @@ def print_channel(channel, sizes)
 
   if $opts[:game]
     print($seperator)
-
-    # add 14 because of the coloring
-    printf("%- " + (sizes["game"] + 14).to_s() + "s", channel["game"].green())
+    printf("%- " + sizes["game"].to_s() + "s", color_text(channel["game"], :green))
   end
 
   if $opts[:url]
     print($seperator)
-    print(channel["url"].blue())
+    print(color_text(channel["url"], :blue))
   end
 
   print("\n")
+end
+
+def color_text(text, color)
+  if !$opts[:colors]
+    return text
+  end
+
+  case color
+  when :blue
+    puts text.blue()
+    return text.blue()
+  when :green
+   return text.green()
+  else
+    return text
+  end
 end
 
 def main()
