@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+main()
+{
+	if [ -z "$@" ]; then
+		twitch -g
+
+		return
+	fi
+
+	stream=$(echo "$1" | awk '{print $1}')
+
+	exec twitch --mpv "${stream}" > /dev/null
+}
+
+main "$@"
+
