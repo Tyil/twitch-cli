@@ -5,8 +5,9 @@ require "json"
 require "net/http"
 require "optparse"
 
-$opts    = {}
-$api_url = "https://api.twitch.tv/kraken/streams/"
+$opts      = {}
+$api_url   = "https://api.twitch.tv/kraken/streams/"
+$seperator = "  "
 
 def get_config_location()
   locations = []
@@ -67,6 +68,10 @@ def parse_opts()
 
     opts.on("-m", "--mpv", "Open the stream in mpv. Implies -s if no argument was given.") do |o|
       $opts[:mpv] = o
+    end
+
+    opts.on("-s", "--seperator S", "Set the seperator between columns") do |o|
+      $seperator = o
     end
 
     opts.on("-u", "--url", "Return the URL when combined with -s, or add the url when -s is omitted") do |o|
@@ -153,10 +158,6 @@ def parse_channels(channels)
     thread.join()
   end
 
-  # add a small increment to sizes to add spaces in the eventual list
-  sizes["name"] += 2
-  sizes["game"] += 2
-
   return [online, sizes]
 end
 
@@ -164,11 +165,14 @@ def print_channel(channel, sizes)
   printf("%- " + sizes["name"].to_s() + "s", channel["name"])
 
   if $opts[:game]
+    print($seperator)
+
     # add 14 because of the coloring
     printf("%- " + (sizes["game"] + 14).to_s() + "s", channel["game"].green())
   end
 
   if $opts[:url]
+    print($seperator)
     print(channel["url"].blue())
   end
 
