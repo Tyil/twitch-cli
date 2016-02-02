@@ -10,6 +10,12 @@ usage()
 	EOF
 }
 
+error_cd()
+{
+	echo "Error switching to directory $1"
+	exit 1
+}
+
 install()
 {
 	# set a default installation location
@@ -25,6 +31,7 @@ install()
 	fi
 
 	cp twitch "${install_dir}/"
+	cp integration/rofi "${install_dir}/twitch_rofi"
 }
 
 remove()
@@ -38,12 +45,13 @@ remove()
 	fi
 
 	rm "${install_dir}/twitch"
+	rm "${install_dir}/twitch_rofi"
 }
 
 update()
 {
 	# save the current working directory
-	owd=$(pwd)
+	pwd=$(pwd)
 
 	# set a default installation location
 	install_dir=${DEFAULT_INSTALL_DIR}
@@ -53,12 +61,12 @@ update()
 		install_dir=$1
 	fi
 
-	cd "${BASE_DIR}"
+	cd "${BASE_DIR}" || error_cd "${BASE_DIR}"
 	git pull origin master
 	cp -f "${BASE_DIR}/twitch" "${install_dir}/"
 
 	# get back to our original place
-	cd "${pwd}"
+	cd "${pwd}" || error_cd "${pwd}"
 }
 
 main()
