@@ -57,16 +57,16 @@ def parse_opts()
   OptionParser.new do |opts|
     opts.banner = "Usage: twitch [options]"
 
+    opts.on("-1", "--single", "Show a single, random channel") do |o|
+      $opts[:single] = o
+    end
+
     opts.on("-g", "--game", "Show the streamed game") do |o|
       $opts[:game] = o
     end
 
     opts.on("-m", "--mpv", "Open the stream in mpv. Implies -s if no argument was given.") do |o|
       $opts[:mpv] = o
-    end
-
-    opts.on("-s", "--single", "Show a single, random channel") do |o|
-      $opts[:single] = o
     end
 
     opts.on("-u", "--url", "Return the URL when combined with -s, or add the url when -s is omitted") do |o|
