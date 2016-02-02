@@ -188,7 +188,6 @@ def color_text(text, color)
 
   case color
   when :blue
-    puts text.blue()
     return text.blue()
   when :green
    return text.green()
