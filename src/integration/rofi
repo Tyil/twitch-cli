@@ -2,13 +2,13 @@
 
 main()
 {
-	if [ -z "$@" ]; then
-		twitch -g
+	local stream
 
+	stream=$(twitch -g | rofi -dmenu | awk '{print $1}')
+
+	if [ -z "${stream}" ]; then
 		return
 	fi
-
-	stream=$(echo "$1" | awk '{print $1}')
 
 	exec twitch --mpv "${stream}" > /dev/null
 }
