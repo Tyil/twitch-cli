@@ -33,7 +33,7 @@ def get_config_location()
     end
   end
 
-  print("Could not load channel file: No file found at any of these locations:".red + "\n")
+  print("Could not load channel file: No file found at any of these locations:".red() + "\n")
 
   locations.each do |location|
     print("  " + location + "\n")
@@ -247,8 +247,8 @@ def main()
   end
 
   # return a list of online channels
-  online.each do |channel|
-    print_channel(channel, sizes)
+  online.each do |c|
+    print_channel(c, sizes)
   end
 end
 
