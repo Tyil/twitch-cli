@@ -228,6 +228,11 @@ def main()
 
   # return a single random channel
   if $opts[:single]
+    if online.length() == 0
+      print("No channels online\n")
+      exit(0)
+    end
+
     channel = online.sample()
 
     # if mpv is set, simply run the stream in mpv
